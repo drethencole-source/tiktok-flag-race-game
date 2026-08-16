@@ -270,6 +270,14 @@ position:relative;overflow:hidden;border-radius:18px;border:2px solid #38506c}
 <body>
 <div id="game">
 
+<audio id="bgMusic" src="/background.mp3" loop preload="auto"></audio>
+<button id="musicToggle" onclick="toggleBackgroundMusic()" style="
+position:absolute;top:35px;left:7px;z-index:615;
+width:auto;padding:5px 8px;margin:0;border-radius:8px;
+border:1px solid #4c6480;background:#14273c;color:#fff;
+font-size:10px;font-weight:900">🎵 الموسيقى: تشغيل</button>
+
+
 <div id="audioUnlock">
   <div class="audioCard">
     <h3>🔊 تفعيل صوت اللعبة</h3>
@@ -302,6 +310,59 @@ position:relative;overflow:hidden;border-radius:18px;border:2px solid #38506c}
 <div id="panel"><h2>سباق الأعلام المتحرك</h2><p>اختر الدولة والهدية، ثم اضغط على إرسال. ستدور العجلات ويتحرك الدرّاج نحو خط النهاية.</p><select id="country"></select><select id="gift"><option value="1">🎁 هدية الدولة = 1 عملة</option></select><button onclick="sendالهدية()">إرسال هدية تجريبية</button><div class="quick"><button onclick="moveالدولة('باكستان',1,'❤️')">🇵🇰 باكستان +1</button><button onclick="moveالدولة('السعودية',1,'❤️')">🇸🇦 Saudi +5</button></div><button onclick="resetRound()">إعادة الجولة</button></div>
 <script>
 
+/* V25 - موسيقى خلفية */
+let bgMusicEnabled = true;
+const bgMusicVolume = 0.16;
+
+function getBgMusic(){
+  return document.getElementById("bgMusic");
+}
+
+async function startBackgroundMusic(){
+  const m=getBgMusic();
+  if(!m || !bgMusicEnabled)return;
+  m.volume=bgMusicVolume;
+  try{
+    await m.play();
+    const b=document.getElementById("musicToggle");
+    if(b)b.textContent="🎵 الموسيقى: تعمل";
+  }catch(e){
+    console.log("Background music waiting for user interaction");
+  }
+}
+
+function toggleBackgroundMusic(){
+  const m=getBgMusic();
+  if(!m)return;
+  bgMusicEnabled=!bgMusicEnabled;
+  const b=document.getElementById("musicToggle");
+  if(bgMusicEnabled){
+    m.volume=bgMusicVolume;
+    startBackgroundMusic();
+    if(b)b.textContent="🎵 الموسيقى: تعمل";
+  }else{
+    m.pause();
+    if(b)b.textContent="🔇 الموسيقى: متوقفة";
+  }
+}
+
+function duckBackgroundMusic(level=0.07,duration=900){
+  const m=getBgMusic();
+  if(!m || m.paused)return;
+  const old=m.volume;
+  m.volume=level;
+  setTimeout(()=>{
+    if(bgMusicEnabled)m.volume=bgMusicVolume;
+  },duration);
+}
+
+window.addEventListener("load",()=>{
+  const m=getBgMusic();
+  if(m)m.volume=bgMusicVolume;
+});
+
+
+
 /* V23 - نظام صوت داخلي بدون ملفات MP3 */
 let audioCtx=null;
 let soundEnabled=false;
@@ -320,6 +381,7 @@ async function unlockAudio(){
   try{
     if(ctx.state==="suspended") await ctx.resume();
     soundEnabled=true;
+    startBackgroundMusic();
     document.getElementById("audioUnlock")?.classList.add("hidden");
     const s=document.getElementById("audioStatus");
     if(s){s.textContent="🔊 الصوت مفعل";s.style.background="#0b5d3b"}
@@ -348,9 +410,9 @@ function makeNoise(dur=.08,vol=.018,delay=0){
   s.connect(g).connect(ctx.destination);s.start(ctx.currentTime+delay);
 }
 function playClickSound(){makeTone(700,.06,"sine",.03)}
-function playGiftSound(){makeTone(760,.07,"triangle",.05);makeTone(980,.08,"triangle",.04,.055)}
-function playBikeSound(){makeTone(155,.11,"sawtooth",.023);makeTone(220,.12,"sawtooth",.018,.055);makeNoise(.10,.015,.02)}
-function playWinnerSound(){
+function playGiftSound(){duckBackgroundMusic(0.08,500);makeTone(760,.07,"triangle",.05);makeTone(980,.08,"triangle",.04,.055)}
+function playBikeSound(){duckBackgroundMusic(0.09,650);makeTone(155,.11,"sawtooth",.023);makeTone(220,.12,"sawtooth",.018,.055);makeNoise(.10,.015,.02)}
+function playWinnerSound(){duckBackgroundMusic(0.045,1800);
   [523,659,784,1047].forEach((n,i)=>makeTone(n,.24,"triangle",.055,i*.12));
   setTimeout(()=>{makeTone(784,.38,"sine",.04);makeTone(1047,.42,"sine",.035,.08);makeNoise(.20,.02)},470);
 }
@@ -362,7 +424,7 @@ function testGameSound(){
 /* محاولة استئناف الصوت في Link Source عند أي تفاعل */
 ["pointerdown","mousedown","touchstart","keydown"].forEach(evt=>{
   window.addEventListener(evt,()=>{
-    if(!soundEnabled)unlockAudio();
+    if(!soundEnabled)unlockAudio(); else startBackgroundMusic();
     else if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
   },{passive:true});
 });
