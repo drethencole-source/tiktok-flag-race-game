@@ -307,7 +307,7 @@ font-size:10px;font-weight:900">🎵 الموسيقى: تشغيل</button>
 </div>
 <div class="screenFlash" id="screenFlash"></div>
 
-<div id="panel"><h2>سباق الأعلام المتحرك</h2><p>اختر الدولة والهدية، ثم اضغط على إرسال. ستدور العجلات ويتحرك الدرّاج نحو خط النهاية.</p><select id="country"></select><select id="gift"><option value="1">🎁 هدية الدولة = 1 عملة</option></select><button onclick="sendالهدية()">إرسال هدية تجريبية</button><div class="quick"><button onclick="moveالدولة('باكستان',1,'❤️')">🇵🇰 باكستان +1</button><button onclick="moveالدولة('السعودية',1,'❤️')">🇸🇦 Saudi +5</button></div><button onclick="resetRound()">إعادة الجولة</button></div>
+<div id="panel"><h2>سباق الأعلام المتحرك</h2><p>اختر الدولة والهدية، ثم اضغط على إرسال. ستدور العجلات ويتحرك الدرّاج نحو خط النهاية.</p><select id="country"></select><select id="gift"><option value="1">🎁 هدية الدولة = 1 عملة</option></select><button onclick="sendالهدية()">إرسال هدية تجريبية</button><div class="quick"><button onclick="moveالدولة('باكستان',1,'❤️')">🇵🇰 باكستان +1</button><button onclick="moveالدولة('السعودية',1,'❤️')">🇸🇦 السعودية +1</button></div><button onclick="resetRound()">إعادة الجولة</button></div>
 <script>
 
 /* V25 - موسيقى خلفية */
@@ -381,7 +381,7 @@ async function unlockAudio(){
   try{
     if(ctx.state==="suspended") await ctx.resume();
     soundEnabled=true;
-    startBackgroundMusic();
+    await startBackgroundMusic();
     document.getElementById("audioUnlock")?.classList.add("hidden");
     const s=document.getElementById("audioStatus");
     if(s){s.textContent="🔊 الصوت مفعل";s.style.background="#0b5d3b"}
@@ -424,8 +424,14 @@ function testGameSound(){
 /* محاولة استئناف الصوت في Link Source عند أي تفاعل */
 ["pointerdown","mousedown","touchstart","keydown"].forEach(evt=>{
   window.addEventListener(evt,()=>{
-    if(!soundEnabled)unlockAudio(); else startBackgroundMusic();
-    else if(audioCtx&&audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
+    if(!soundEnabled){
+      unlockAudio();
+    }else{
+      startBackgroundMusic();
+      if(audioCtx && audioCtx.state==="suspended"){
+        audioCtx.resume().catch(()=>{});
+      }
+    }
   },{passive:true});
 });
 document.addEventListener("visibilitychange",()=>{
