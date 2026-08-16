@@ -645,4 +645,60 @@ function receiveTikTokالهدية(giftName,imageUrl){
 }
 
 window.FlagRace={moveالدولة,resetRound,registerTikTokالهدية,registerالهديةCatalog,receiveTikTokالهدية};render();
+
+/* ============================================
+   V24 - اتصال اللعبة بخادم Render عبر WebSocket
+   ============================================ */
+let gameSocket = null;
+let gameSocketRetry = null;
+
+function connectGameSocket(){
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const url = protocol + "//" + location.host + "/ws";
+
+  try{
+    gameSocket = new WebSocket(url);
+
+    gameSocket.addEventListener("open",()=>{
+      console.log("V24 game websocket connected");
+      clearTimeout(gameSocketRetry);
+    });
+
+    gameSocket.addEventListener("message",(ev)=>{
+      try{
+        const msg = JSON.parse(ev.data);
+
+        if(msg.type === "gift" && msg.country){
+          const c = C.find(x=>x.name === msg.country);
+          if(!c){
+            console.warn("Country not found:", msg.country);
+            return;
+          }
+
+          // Always exactly one movement step.
+          const visualGift = c.giftImage || c.giftIcon || "🎁";
+          moveالدولة(c.name, 1, visualGift);
+        }
+      }catch(err){
+        console.log("Bad websocket message", err);
+      }
+    });
+
+    gameSocket.addEventListener("close",()=>{
+      console.log("Game websocket disconnected, retrying...");
+      clearTimeout(gameSocketRetry);
+      gameSocketRetry = setTimeout(connectGameSocket, 2500);
+    });
+
+    gameSocket.addEventListener("error",()=>{
+      try{ gameSocket.close(); }catch(e){}
+    });
+  }catch(err){
+    clearTimeout(gameSocketRetry);
+    gameSocketRetry = setTimeout(connectGameSocket, 2500);
+  }
+}
+
+window.addEventListener("load", connectGameSocket);
+
 </script></body></html>
